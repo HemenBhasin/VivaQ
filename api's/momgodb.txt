@@ -1,0 +1,11 @@
+username and password : hemenbhasin  , KkNuaZUs7ssmdQ5D
+connection string : mongodb+srv://hemenbhasin:KkNuaZUs7ssmdQ5D@vivaq.xsfnzrq.mongodb.net/
+
+firebase:
+  apiKey: "AIzaSyCkHx780NzxG4mqYkJfovdJpPeMQi9fmBg",
+  authDomain: "vivaq-416.firebaseapp.com",
+  projectId: "vivaq-416",
+  storageBucket: "vivaq-416.firebasestorage.app",
+  messagingSenderId: "342270985251",
+  appId: "1:342270985251:web:49b6e31ab805d77e0edd96",
+  measurementId: "G-DBRQ4SLEBZ"
