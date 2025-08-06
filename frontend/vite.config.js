@@ -17,6 +17,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@config': path.resolve(__dirname, './src/config') // If using config folder
     },
+    extensions: ['.js', '.jsx', '.json']  // Add this line
   },
   base: process.env.VITE_BASE_PATH || "/VivaQ",
 })
