@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, googleProvider } from '../firebaseConfig';
+import { auth, googleProvider } from '@/firebaseConfig';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 
 function Login() {
