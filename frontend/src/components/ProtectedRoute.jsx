@@ -1,6 +1,8 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { auth} from '../firebaseConfig';
+//import { auth} from '../firebaseConfig';
+import { auth} from '@/firebaseConfig';
+
 import { createPortal } from 'react-dom';
 import LightRays from './LightRays';
 
