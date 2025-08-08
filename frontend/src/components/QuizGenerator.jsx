@@ -204,7 +204,7 @@ const QuizGenerator = () => {
       console.log('Sending quiz payload:', quizPayload);
       
       const token = await currentUser.getIdToken();
-      const response = await fetch('http://localhost:5000/api/save-quiz', {
+      const response = await fetch('https://vivaq-production.up.railway.app/api/save-quiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -265,7 +265,7 @@ const QuizGenerator = () => {
       console.log('Sending test quiz payload:', quizPayload);
       
       const token = await currentUser.getIdToken();
-      const response = await fetch('http://localhost:5000/api/save-quiz', {
+      const response = await fetch('https://vivaq-production.up.railway.app/api/save-quiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

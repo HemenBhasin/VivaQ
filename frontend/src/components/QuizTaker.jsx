@@ -44,7 +44,7 @@ const QuizTaker = ({ quizId, onComplete }) => {
   const fetchQuiz = async () => {
     try {
       const token = await auth.currentUser?.getIdToken();
-      const response = await fetch(`http://localhost:5000/api/quiz/${quizId}`, {
+      const response = await fetch(`https://vivaq-production.up.railway.app/api/quiz/${quizId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -93,7 +93,7 @@ const QuizTaker = ({ quizId, onComplete }) => {
       const token = await auth.currentUser?.getIdToken();
       console.log('Token present:', !!token);
 
-      const response = await fetch('http://localhost:5000/api/submit-quiz', {
+      const response = await fetch('https://vivaq-production.up.railway.app/api/submit-quiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

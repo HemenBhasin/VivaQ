@@ -26,7 +26,7 @@ const AdminAnalytics = () => {
   const fetchQuizzes = async () => {
     try {
       const token = await auth.currentUser?.getIdToken();
-      const response = await fetch('http://localhost:5000/api/admin/quizzes', {
+      const response = await fetch('https://vivaq-production.up.railway.app/api/admin/quizzes', {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -48,7 +48,7 @@ const AdminAnalytics = () => {
   const fetchSubmissions = async (quizId) => {
     try {
       const token = await auth.currentUser?.getIdToken();
-      const response = await fetch(`http://localhost:5000/api/submissions/quiz/${quizId}`, {
+      const response = await fetch(`https://vivaq-production.up.railway.app/api/submissions/quiz/${quizId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -69,7 +69,7 @@ const AdminAnalytics = () => {
   const fetchSubmissionDetails = async (submissionId) => {
     try {
       const token = await auth.currentUser?.getIdToken();
-      const response = await fetch(`http://localhost:5000/api/submission/${submissionId}`, {
+      const response = await fetch(`https://vivaq-production.up.railway.app/api/submission/${submissionId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
