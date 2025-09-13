@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { getAuth } from 'firebase/auth';
+import { API_BASE } from '../apiConfig';
 import QuizTaker from './QuizTaker';
 
 function StudentDashboard() {
@@ -26,7 +27,7 @@ function StudentDashboard() {
       const token = await auth.currentUser?.getIdToken();
       console.log('Fetching quizzes with token:', token ? 'Present' : 'Missing');
       
-      const response = await fetch('`${API_BASE}/api/quizzes', {
+      const response = await fetch(`${API_BASE}/api/quizzes`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -51,7 +52,7 @@ function StudentDashboard() {
   const fetchSubmissions = async () => {
     try {
       const token = await auth.currentUser?.getIdToken();
-      const response = await fetch('`${API_BASE}/api/student/submissions', {
+      const response = await fetch(`${API_BASE}/api/student/submissions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       

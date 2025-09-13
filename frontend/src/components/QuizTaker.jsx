@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { getAuth } from 'firebase/auth';
+import { API_BASE } from '../apiConfig';
 
 const QuizTaker = ({ quizId, onComplete }) => {
   const [quiz, setQuiz] = useState(null);
@@ -93,7 +94,7 @@ const QuizTaker = ({ quizId, onComplete }) => {
       const token = await auth.currentUser?.getIdToken();
       console.log('Token present:', !!token);
 
-      const response = await fetch('https://vivaq-production.up.railway.app/api/submit-quiz', {
+      const response = await fetch(`${API_BASE}/api/submit-quiz`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

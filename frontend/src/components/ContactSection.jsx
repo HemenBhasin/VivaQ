@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { API_BASE } from '../apiConfig';
 
 const ContactSection = () => {
   const [formData, setFormData] = useState({
@@ -29,7 +30,7 @@ const ContactSection = () => {
       }
 
       // Send to backend API
-      const response = await fetch('https://vivaq-production.up.railway.app/api/contact', {
+      const response = await fetch(`${API_BASE}/api/contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
