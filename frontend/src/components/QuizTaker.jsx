@@ -44,7 +44,7 @@ const QuizTaker = ({ quizId, onComplete }) => {
   const fetchQuiz = async () => {
     try {
       const token = await auth.currentUser?.getIdToken();
-      const response = await fetch(`https://vivaq-production.up.railway.app/api/quiz/${quizId}`, {
+      const response = await fetch(`${API_BASE}/api/quiz/${quizId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

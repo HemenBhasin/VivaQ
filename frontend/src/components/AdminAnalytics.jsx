@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { getAuth } from 'firebase/auth';
+import { API_BASE } from '../apiConfig';
 
 const AdminAnalytics = () => {
   const [quizzes, setQuizzes] = useState([]);
@@ -23,10 +24,10 @@ const AdminAnalytics = () => {
     }
   }, [selectedQuiz]);
 
-  const fetchQuizzes = async () => {
+const fetchQuizzes = async () => {
     try {
       const token = await auth.currentUser?.getIdToken();
-      const response = await fetch('https://vivaq-production.up.railway.app/api/admin/quizzes', {
+      const response = await fetch(`${API_BASE}/api/admin/quizzes`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -45,10 +46,10 @@ const AdminAnalytics = () => {
     }
   };
 
-  const fetchSubmissions = async (quizId) => {
+const fetchSubmissions = async (quizId) => {
     try {
       const token = await auth.currentUser?.getIdToken();
-      const response = await fetch(`https://vivaq-production.up.railway.app/api/submissions/quiz/${quizId}`, {
+      const response = await fetch(`${API_BASE}/api/submissions/quiz/${quizId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -66,10 +67,10 @@ const AdminAnalytics = () => {
     }
   };
 
-  const fetchSubmissionDetails = async (submissionId) => {
+const fetchSubmissionDetails = async (submissionId) => {
     try {
       const token = await auth.currentUser?.getIdToken();
-      const response = await fetch(`https://vivaq-production.up.railway.app/api/submission/${submissionId}`, {
+      const response = await fetch(`${API_BASE}/api/submission/${submissionId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

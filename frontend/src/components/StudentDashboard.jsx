@@ -26,7 +26,7 @@ function StudentDashboard() {
       const token = await auth.currentUser?.getIdToken();
       console.log('Fetching quizzes with token:', token ? 'Present' : 'Missing');
       
-      const response = await fetch('https://vivaq-production.up.railway.app/api/quizzes', {
+      const response = await fetch('`${API_BASE}/api/quizzes', {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -51,7 +51,7 @@ function StudentDashboard() {
   const fetchSubmissions = async () => {
     try {
       const token = await auth.currentUser?.getIdToken();
-      const response = await fetch('https://vivaq-production.up.railway.app/api/student/submissions', {
+      const response = await fetch('`${API_BASE}/api/student/submissions', {
         headers: { Authorization: `Bearer ${token}` },
       });
       
