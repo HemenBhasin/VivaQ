@@ -6,7 +6,17 @@ require('dotenv').config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://vivaq.vercel.app',
+    'https://vivaq.onrender.com',
+    /\.onrender\.com$/,
+    /\.vercel\.app$/
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
 app.use(express.json());
 
 // Routes
@@ -45,7 +55,12 @@ mongoose.connect(MONGODB_URI, {
   console.log('1. Go to MongoDB Atlas dashboard');
   console.log('2. Navigate to Network Access');
   console.log('3. Click "Add IP Address"');
-  console.log('4. Add your current IP or use "0.0.0.0/0" for all IPs (development only)');
+  console.log('4. Add these Render static IPs:');
+  console.log('   - 13.228.225.19');
+  console.log('   - 18.142.128.26');
+  console.log('   - 54.254.162.138');
+  console.log('5. Or use "0.0.0.0/0" for all IPs (development only)');
+  console.log('6. Wait a few minutes for the changes to take effect');
 });
 
 const PORT = process.env.PORT || 5000;
