@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { API_BASE } from '../apiConfig';
 
 const QuizGenerator = () => {
   const [topic, setTopic] = useState('');
@@ -204,7 +205,7 @@ const QuizGenerator = () => {
       console.log('Sending quiz payload:', quizPayload);
       
       const token = await currentUser.getIdToken();
-      const response = await fetch('`${API_BASE}/api/save-quiz', {
+      const response = await fetch(`${API_BASE}/api/save-quiz`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -265,7 +266,7 @@ const QuizGenerator = () => {
       console.log('Sending test quiz payload:', quizPayload);
       
       const token = await currentUser.getIdToken();
-      const response = await fetch('`${API_BASE}/api/save-quiz', {
+      const response = await fetch(`${API_BASE}/api/save-quiz`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
