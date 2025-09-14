@@ -31,7 +31,24 @@ const QuizTaker = ({ quizId, onComplete }) => {
       const timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
-            handleSubmit();
+            // Auto-submit when time runs out
+            handleSubmit().catch(err => {
+              console.error('Auto-submit failed:', err);
+              // Fallback: still complete the quiz even if submission fails
+              onComplete({
+                score: 0,
+                totalPossibleScore: quiz?.totalPoints || 0,
+                percentage: 0,
+                timeTakenSeconds: Math.floor((Date.now() - startTime) / 1000),
+                submittedAt: new Date().toISOString(),
+                answers: Object.keys(answers).map(questionId => ({
+                  questionId,
+                  answer: answers[questionId],
+                  isCorrect: false,
+                  points: 0
+                }))
+              });
+            });
             return 0;
           }
           return prev - 1;
@@ -40,7 +57,7 @@ const QuizTaker = ({ quizId, onComplete }) => {
 
       return () => clearInterval(timer);
     }
-  }, [timeLeft, startTime]);
+  }, [timeLeft, startTime, answers, quiz, startTime, onComplete]);
 
   const fetchQuiz = async () => {
     try {
