@@ -17,6 +17,7 @@ const QuizGenerator = () => {
   const [quizSaved, setQuizSaved] = useState(false);
   const [savedQuizId, setSavedQuizId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const auth = getAuth();
@@ -26,13 +27,17 @@ const QuizGenerator = () => {
     return () => unsubscribe();
   }, []);
 
-  // Function to call the Gemini API directly from frontend
-  const generateQuestions = async () => {
+  // Function to add delay for retry
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Function to call the Gemini API directly from frontend with retry logic
+  const generateQuestions = async (currentRetryCount = 0) => {
     setError('');
     setLoading(true);
     setGeneratedQuestions([]);
     setQuizSaved(false);
     setSavedQuizId(null);
+    setRetryCount(currentRetryCount);
 
     const prompt = `Generate ${numQuestions} ${questionType} questions about "${topic}".
     For MCQ and Checkbox questions, provide 3-5 options and indicate the correct one(s).
@@ -82,7 +87,7 @@ const QuizGenerator = () => {
       setError('Gemini API key is not set in environment variables');
       return;
     }
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`;
 
     try {
       const response = await fetch(apiUrl, {
@@ -92,6 +97,15 @@ const QuizGenerator = () => {
       });
 
       if (!response.ok) {
+        if (response.status === 429 && currentRetryCount < 3) {
+          // Rate limit exceeded - implement exponential backoff
+          const delayMs = Math.pow(2, currentRetryCount) * 1000; // 1s, 2s, 4s
+          console.log(`Rate limit hit. Retrying in ${delayMs}ms... (Attempt ${currentRetryCount + 1}/3)`);
+          await sleep(delayMs);
+          return generateQuestions(currentRetryCount + 1);
+        } else if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -108,7 +122,11 @@ const QuizGenerator = () => {
       }
     } catch (err) {
       console.error('Error generating questions:', err);
-      setError(`Failed to generate questions: ${err.message}. Please ensure the topic is clear and try again.`);
+      if (err.message.includes('Rate limit')) {
+        setError(`${err.message} This is a temporary limitation from the API provider.`);
+      } else {
+        setError(`Failed to generate questions: ${err.message}. Please ensure the topic is clear and try again.`);
+      }
     } finally {
       setLoading(false);
     }
@@ -467,15 +485,15 @@ const QuizGenerator = () => {
                 ${loading || !topic.trim() ? 'bg-white/10 text-purple-400 cursor-not-allowed' : 'bg-gradient-to-r from-purple-500 to-blue-500 shadow-lg shadow-purple-500/25 hover:shadow-xl'}`}
             >
               {loading ? (
-                <div className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <div className="flex flex-col items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Generating...
+                  {retryCount > 0 ? `Retrying... (${retryCount}/3)` : 'Generating...'}
                 </div>
               ) : (
-                'Generate Questions ✨'
+                'Generate Questions '
               )}
             </motion.button>
 

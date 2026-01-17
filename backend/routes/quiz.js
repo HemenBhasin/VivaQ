@@ -47,28 +47,59 @@ async function verifyStudent(req, res, next) {
 // POST /generate-quiz - Calls Gemini API to generate quiz questions
 router.post('/generate-quiz', verifyAdmin, express.json(), async (req, res) => {
   const { topic, questionType, numberOfQuestions } = req.body;
-  try {
-    // Construct prompt for Gemini API
-    const prompt = `Generate ${numberOfQuestions} quiz questions on the topic "${topic}" with question type "${questionType}". Provide questions and answers in JSON format with fields: questionText, options (if MCQ), and correctAnswer.`;
-
-    // Call Gemini API
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-
-    // Parse response text as JSON
-    let questions = [];
+  
+  // Sleep function for retry delays
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  
+  // Generate content with retry logic
+  const generateContentWithRetry = async (retryCount = 0) => {
     try {
-      questions = JSON.parse(response.text);
-    } catch (parseError) {
-      // If parsing fails, return error
-      return res.status(500).json({ message: 'Failed to parse Gemini API response', error: parseError.message });
-    }
+      // Construct prompt for Gemini API
+      const prompt = `Generate ${numberOfQuestions} quiz questions on the topic "${topic}" with question type "${questionType}". Provide questions and answers in JSON format with fields: questionText, options (if MCQ), and correctAnswer.`;
 
+      // Call Gemini API
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-lite',
+        contents: prompt,
+      });
+
+      // Parse response text as JSON
+      let questions = [];
+      try {
+        questions = JSON.parse(response.text);
+      } catch (parseError) {
+        // If parsing fails, return error
+        throw new Error(`Failed to parse Gemini API response: ${parseError.message}`);
+      }
+
+      return questions;
+    } catch (error) {
+      // Check if it's a rate limit error (429)
+      if (error.message && error.message.includes('429')) {
+        if (retryCount < 3) {
+          // Rate limit exceeded - implement exponential backoff
+          const delayMs = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+          console.log(`Rate limit hit in backend. Retrying in ${delayMs}ms... (Attempt ${retryCount + 1}/3)`);
+          await sleep(delayMs);
+          return generateContentWithRetry(retryCount + 1);
+        } else {
+          throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
+        }
+      }
+      throw error;
+    }
+  };
+
+  try {
+    const questions = await generateContentWithRetry();
     res.json({ questions });
   } catch (error) {
-    res.status(500).json({ message: 'Error generating quiz', error: error.message });
+    console.error('Error generating quiz:', error);
+    if (error.message.includes('Rate limit')) {
+      res.status(429).json({ message: error.message });
+    } else {
+      res.status(500).json({ message: 'Error generating quiz', error: error.message });
+    }
   }
 });
 
