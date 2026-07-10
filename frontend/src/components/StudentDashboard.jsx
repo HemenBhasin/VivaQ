@@ -1,6 +1,6 @@
+import { auth } from '../firebaseConfig';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { getAuth } from 'firebase/auth';
 import { API_BASE } from '../apiConfig';
 import QuizTaker from './QuizTaker';
 
@@ -12,8 +12,6 @@ function StudentDashboard() {
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [quizCompleted, setQuizCompleted] = useState(null);
   const [showSubmissions, setShowSubmissions] = useState(false);
-
-  const auth = getAuth();
 
   useEffect(() => {
     fetchQuizzes();

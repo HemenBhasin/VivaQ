@@ -1,6 +1,7 @@
+import { auth } from '../firebaseConfig';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
 const LandingPage = () => {
@@ -11,7 +12,6 @@ const LandingPage = () => {
   const [error, setError] = useState('');
   const [userType, setUserType] = useState('student');
 
-  const auth = getAuth();
   const navigate = useNavigate();
 
   const handleAuth = async (e) => {

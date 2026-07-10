@@ -15,6 +15,7 @@ function ProtectedRoute({ children, allowedRoles }) {
 
   React.useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      console.log("ProtectedRoute auth state changed:", user ? user.email : "null");
       if (user) {
         setIsAuthenticated(true);
         // TODO: Fetch user role from backend or Firebase custom claims

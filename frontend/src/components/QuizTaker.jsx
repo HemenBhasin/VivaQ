@@ -1,6 +1,6 @@
+import { auth } from '../firebaseConfig';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { getAuth } from 'firebase/auth';
 import { API_BASE } from '../apiConfig';
 
 const QuizTaker = ({ quizId, onComplete }) => {
@@ -12,8 +12,6 @@ const QuizTaker = ({ quizId, onComplete }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [startTime, setStartTime] = useState(null);
-
-  const auth = getAuth();
 
   useEffect(() => {
     fetchQuiz();

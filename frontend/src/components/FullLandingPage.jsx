@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '../firebaseConfig';
 import { useNavigate } from 'react-router-dom';
 import AboutSection from './AboutSection';
 import Carousel from './Carousel';
@@ -15,7 +16,6 @@ const FullLandingPage = () => {
   const [userType, setUserType] = useState('student');
   const [showLogin, setShowLogin] = useState(true);
 
-  const auth = getAuth();
   const navigate = useNavigate();
 
   const handleAuth = async (e) => {

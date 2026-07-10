@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { getAuth } from 'firebase/auth';
+import { auth } from '../firebaseConfig';
 import { API_BASE } from '../apiConfig';
 
 const AdminAnalytics = () => {
@@ -11,8 +11,6 @@ const AdminAnalytics = () => {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const auth = getAuth();
 
   useEffect(() => {
     fetchQuizzes();
