@@ -18,7 +18,16 @@ const submissionSchema = new mongoose.Schema({
   timeTakenSeconds: { type: Number, default: 0 },
   status: { type: String, enum: ['in-progress', 'completed'], default: 'completed' },
   startedAt: { type: Date, default: Date.now },
-  submittedAt: { type: Date, default: Date.now }
+  submittedAt: { type: Date, default: Date.now },
+  autoSubmitted: {
+    type: Boolean,
+    default: false
+  },
+  malpractice: {
+    type: Boolean,
+    default: false
+  },
+  violations: { type: Number, default: 0 }
 });
 
 // Calculate percentage before saving

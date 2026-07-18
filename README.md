@@ -4,8 +4,10 @@ VivaQ is a comprehensive quiz platform with Gemini AI integration for real-time 
 
 ## Features Implemented
 
-### Admin Features
+### Admin & Teacher Features
 - **Quiz Generation**: Create quizzes manually or using Gemini AI integration
+- **Classroom Management**: Create virtual classrooms, invite students, and assign quizzes directly to a class
+- **Proctoring Settings**: Toggle standard or strict proctoring (AI face tracking & screen monitoring) for quizzes
 - **Time Limits**: Set time limits for quiz attempts (1-180 minutes)
 - **Availability Settings**: Configure quiz availability start and end times
 - **Analytics Dashboard**: View student submissions, scores, and detailed analytics
@@ -13,6 +15,8 @@ VivaQ is a comprehensive quiz platform with Gemini AI integration for real-time 
 - **Quiz Statistics**: Track average scores, highest/lowest scores, and submission counts
 
 ### Student Features
+- **Classroom Access**: Join classrooms to instantly see assigned quizzes
+- **Auto-Save & Resume**: Seamlessly save quiz progress (answers and remaining time) and resume later if disconnected or interrupted
 - **Quiz Taking Interface**: Interactive quiz interface with progress tracking
 - **Timer Display**: Real-time countdown timer for time-limited quizzes
 - **Score Viewing**: View completed quiz scores and performance metrics
@@ -20,8 +24,10 @@ VivaQ is a comprehensive quiz platform with Gemini AI integration for real-time 
 - **Responsive Design**: Mobile-friendly interface for quiz taking
 
 ### Technical Features
+- **AI Proctoring (Strict Mode)**: Uses `MediaPipe FaceLandmarker` to monitor head pose (yaw/pitch) and eye gaze (blendshapes) for detecting cheating
+- **Environment Monitoring**: Enforces full-screen mode and detects tab/window switching (auto-submits after multiple warnings)
 - **Firebase Authentication**: Secure user authentication and role-based access
-- **MongoDB Database**: Scalable data storage for quizzes and submissions
+- **MongoDB Database**: Scalable data storage for quizzes, submissions, and classrooms
 - **Real-time Updates**: Live timer and progress tracking
 - **API Security**: Token-based authentication for all API endpoints
 - **Error Handling**: Comprehensive error handling and user feedback
@@ -190,11 +196,17 @@ VivaQ/
 - Token-based API security
 - Input validation and sanitization
 
+### AI Proctoring & Anti-Cheat
+- **Head & Eye Tracking**: Google MediaPipe AI detects if a student looks away from the screen for an extended period
+- **Fullscreen Enforcement**: Forces students into fullscreen and warns/penalizes them if they exit
+- **Tab Switch Detection**: Detects if the browser window loses focus (e.g., student switching tabs)
+- **Progressive Warnings**: Provides grace periods and warnings before automatically submitting the exam on repeated violations
+
 ### User Experience
-- Responsive design for mobile devices
-- Progress tracking during quiz taking
-- Real-time feedback and error handling
-- Intuitive navigation and UI
+- **Auto-Save**: Progress is saved every 10 seconds locally and on the server, restoring smoothly on resume
+- **Responsive design**: Mobile-friendly interface for general use
+- **Real-time feedback**: Dynamic warnings and error handling
+- **Intuitive navigation**: Dashboard layout for both teachers and students
 
 ## Technology Stack
 

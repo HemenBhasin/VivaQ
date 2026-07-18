@@ -11,7 +11,10 @@ app.use(cors({
     'https://vivaq.vercel.app',
     'https://vivaq.onrender.com',
     /\.onrender\.com$/,
-    /\.vercel\.app$/
+    /\.vercel\.app$/,
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:3004'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -23,10 +26,12 @@ app.use(express.json());
 const quizRoutes = require('./routes/quiz');
 const submissionRoutes = require('./routes/submissions');
 const contactRoutes = require('./routes/contact');
+const classroomRoutes = require('./routes/classroom');
 
 app.use('/api', quizRoutes);
 app.use('/api', submissionRoutes);
 app.use('/api', contactRoutes);
+app.use('/api/classrooms', classroomRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
@@ -39,8 +44,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal server error', error: err.message });
 });
 
-// MongoDB connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://hemenbhasin:KkNuaZUs7ssmdQ5D@vivaq.xsfnzrq.mongodb.net/vivaq?retryWrites=true&w=majority';
+// MongoDB URI must be set via environment variable — no fallback to prevent credential leaks
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  console.error('FATAL: MONGODB_URI environment variable is not set. Exiting.');
+  process.exit(1);
+}
 
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,

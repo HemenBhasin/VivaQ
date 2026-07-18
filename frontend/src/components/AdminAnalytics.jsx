@@ -227,6 +227,7 @@ const fetchSubmissionDetails = async (submissionId) => {
                         <th className="text-left py-4 px-4 font-semibold text-purple-200">Student</th>
                         <th className="text-left py-4 px-4 font-semibold text-purple-200">Score</th>
                         <th className="text-left py-4 px-4 font-semibold text-purple-200">Percentage</th>
+                        <th className="text-left py-4 px-4 font-semibold text-purple-200">Status</th>
                         <th className="text-left py-4 px-4 font-semibold text-purple-200">Time Taken</th>
                         <th className="text-left py-4 px-4 font-semibold text-purple-200">Submitted</th>
                         <th className="text-left py-4 px-4 font-semibold text-purple-200">Actions</th>
@@ -251,6 +252,21 @@ const fetchSubmissionDetails = async (submissionId) => {
                             }`}>
                               {submission.percentage}%
                             </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            {submission.malpractice ? (
+                              <span className="inline-block px-3 py-1 text-xs rounded-full bg-red-600/30 text-red-300 border border-red-500/50 font-bold">
+                                MALPRACTICE
+                              </span>
+                            ) : submission.autoSubmitted ? (
+                              <span className="inline-block px-3 py-1 text-xs rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+                                Auto-Submitted
+                              </span>
+                            ) : (
+                              <span className="inline-block px-3 py-1 text-xs rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+                                Normal
+                              </span>
+                            )}
                           </td>
                           <td className="py-4 px-4 text-purple-200">
                             {Math.floor(submission.timeTakenSeconds / 60)}m {submission.timeTakenSeconds % 60}s

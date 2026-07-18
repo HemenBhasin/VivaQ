@@ -3,6 +3,7 @@ const router = express.Router();
 const Quiz = require('../models/Quiz');
 const Submission = require('../models/Submission');
 const User = require('../models/User');
+const Classroom = require('../models/Classroom');
 const admin = require('../firebaseAdmin');
 const { GoogleGenAI } = require('@google/genai');
 const mongoose = require('mongoose');
@@ -154,7 +155,6 @@ router.get('/quizzes', verifyStudent, async (req, res) => {
     let user = await User.findOne({ firebaseUID: userId });
     if (!user) {
       console.log('User not found, creating student user');
-      // Create student user if it doesn't exist
       user = new User({
         firebaseUID: userId,
         email: req.user.email,
@@ -166,12 +166,17 @@ router.get('/quizzes', verifyStudent, async (req, res) => {
       console.log('Found existing user:', user._id, 'Role:', user.role);
     }
 
-    // Find quizzes assigned to this user or assigned to all (empty assignedTo means assigned to all)
+    // Find classrooms this student belongs to
+    const studentClassrooms = await Classroom.find({ students: user._id }).select('_id');
+    const classroomIds = studentClassrooms.map(c => c._id);
+
+    // Find quizzes assigned directly to user, to any of their classrooms, or to all
     const quizzes = await Quiz.find({
       $or: [
-        { assignedTo: { $exists: false } },
-        { assignedTo: { $size: 0 } },
-        { assignedTo: user._id }
+        { assignedTo: { $exists: false }, assignedClassrooms: { $size: 0 } },
+        { assignedTo: { $size: 0 }, assignedClassrooms: { $size: 0 } },
+        { assignedTo: user._id },
+        { assignedClassrooms: { $in: classroomIds } }
       ],
       status: 'active'
     }).populate('createdBy', 'email');
@@ -183,7 +188,6 @@ router.get('/quizzes', verifyStudent, async (req, res) => {
     const availableQuizzes = quizzes.filter(quiz => {
       const isAvailable = (!quiz.availabilityStart || now >= quiz.availabilityStart) &&
                          (!quiz.availabilityEnd || now <= quiz.availabilityEnd);
-      console.log(`Quiz ${quiz._id}: available=${isAvailable}, start=${quiz.availabilityStart}, end=${quiz.availabilityEnd}`);
       return isAvailable;
     });
 
@@ -239,6 +243,8 @@ router.get('/quiz/:id', verifyStudent, async (req, res) => {
       description: quiz.description,
       timeLimitMinutes: quiz.timeLimitMinutes,
       totalPoints: quiz.totalPoints,
+      isProctored: quiz.isProctored,
+      isStrictProctored: quiz.isStrictProctored,
       questions: quiz.questions.map(q => ({
         _id: q._id,
         questionText: q.questionText,
@@ -247,16 +253,71 @@ router.get('/quiz/:id', verifyStudent, async (req, res) => {
       }))
     };
 
-    res.json({ quiz: quizForStudent });
+    res.json({ 
+      quiz: quizForStudent,
+      existingSubmission: existingSubmission && existingSubmission.status === 'in-progress' ? existingSubmission : null
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching quiz', error: error.message });
+  }
+});
+
+// POST /save-progress - Save in-progress quiz answers
+router.post('/save-progress', verifyStudent, express.json(), async (req, res) => {
+  try {
+    const { quizId, answers, timeTakenSeconds } = req.body;
+    const userId = req.user.uid;
+    const user = await User.findOne({ firebaseUID: userId });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Validate inputs
+    if (!quizId || !answers || !Array.isArray(answers)) {
+      return res.status(400).json({ message: 'Invalid payload' });
+    }
+
+    const processedAnswers = answers.map(a => ({
+      questionId: new mongoose.Types.ObjectId(a.questionId),
+      answer: a.answer,
+      isCorrect: false,
+      points: 0
+    }));
+
+    let submission = await Submission.findOne({ userId: user._id, quizId });
+
+    if (submission && submission.status === 'completed') {
+      return res.status(400).json({ message: 'Quiz already completed' });
+    }
+
+    if (submission) {
+      submission.answers = processedAnswers;
+      submission.timeTakenSeconds = timeTakenSeconds || 0;
+      submission.status = 'in-progress';
+      await submission.save();
+    } else {
+      submission = new Submission({
+        userId: user._id,
+        quizId,
+        answers: processedAnswers,
+        timeTakenSeconds: timeTakenSeconds || 0,
+        status: 'in-progress',
+        score: 0,
+        totalPossibleScore: 0,
+        percentage: 0
+      });
+      await submission.save();
+    }
+
+    res.json({ message: 'Progress saved successfully' });
+  } catch (error) {
+    console.error('Error saving progress:', error);
+    res.status(500).json({ message: 'Error saving progress', error: error.message });
   }
 });
 
 // POST /submit-quiz - Submit quiz answers
 router.post('/submit-quiz', verifyStudent, express.json(), async (req, res) => {
   try {
-    const { quizId, answers, timeTakenSeconds } = req.body;
+    const { quizId, answers, timeTakenSeconds, autoSubmitted, violations, malpractice } = req.body;
     const userId = req.user.uid;
     
     console.log('Quiz submission request:', {
@@ -367,10 +428,13 @@ router.post('/submit-quiz', verifyStudent, express.json(), async (req, res) => {
       answers: processedAnswers,
       score,
       totalPossibleScore: quiz.totalPoints,
-      percentage: Math.round((score / quiz.totalPoints) * 100), // Calculate percentage manually
+      percentage: Math.round((score / quiz.totalPoints) * 100),
       timeTakenSeconds,
       status: 'completed',
-      submittedAt: new Date()
+      submittedAt: new Date(),
+      autoSubmitted: autoSubmitted || false,
+      malpractice: malpractice || false,
+      violations: violations || 0
     };
 
     console.log('Submission data:', submissionData);

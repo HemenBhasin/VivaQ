@@ -14,20 +14,47 @@ const QuizGenerator = () => {
   const [availabilityEnd, setAvailabilityEnd] = useState('');
   const [generatedQuestions, setGeneratedQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [quizSaved, setQuizSaved] = useState(false);
   const [savedQuizId, setSavedQuizId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editFormData, setEditFormData] = useState(null);
+  // Classroom & proctoring
+  const [classrooms, setClassrooms] = useState([]);
+  const [selectedClassrooms, setSelectedClassrooms] = useState([]);
+  const [isProctored, setIsProctored] = useState(false);
+  const [isStrictProctored, setIsStrictProctored] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
+      if (user) fetchClassrooms(user);
     });
     return () => unsubscribe();
   }, []);
+
+  const fetchClassrooms = async (user) => {
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${API_BASE}/api/classrooms/admin`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setClassrooms(data.classrooms || []);
+      }
+    } catch (e) {
+      console.error('Failed to fetch classrooms:', e);
+    }
+  };
+
+  const toggleClassroom = (id) => {
+    setSelectedClassrooms(prev =>
+      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+    );
+  };
 
   // Function to add delay for retry
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -301,11 +328,14 @@ const QuizGenerator = () => {
         description,
         questionType,
         questions: transformedQuestions,
-        assignedTo: [], // For now, assign to all students; can be extended to specific users
+        assignedTo: [],
+        assignedClassrooms: selectedClassrooms,
         availabilityStart: availabilityStart ? new Date(availabilityStart).toISOString() : null,
         availabilityEnd: availabilityEnd ? new Date(availabilityEnd).toISOString() : null,
         timeLimitMinutes: timeLimitMinutes || null,
-        status: 'active'
+        status: 'active',
+        isProctored,
+        isStrictProctored
       };
       
       console.log('Sending quiz payload:', quizPayload);
@@ -562,6 +592,99 @@ const QuizGenerator = () => {
                   className="w-full p-4 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/5 backdrop-blur-sm text-white"
                 />
               </div>
+            </div>
+
+            {/* Classroom Assignment */}
+            {classrooms.length > 0 && (
+              <div className="mt-6">
+                <label className="block text-purple-200 text-sm font-bold mb-3">
+                  Assign to Classrooms:
+                  <span className="ml-2 text-purple-400 font-normal text-xs">(leave unselected to assign to all students)</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {classrooms.map(c => (
+                    <button
+                      key={c._id}
+                      type="button"
+                      onClick={() => toggleClassroom(c._id)}
+                      className={`flex items-center space-x-3 p-3 rounded-xl border text-left transition-all duration-200 ${
+                        selectedClassrooms.includes(c._id)
+                          ? 'border-purple-500 bg-purple-500/20 text-white'
+                          : 'border-white/20 bg-white/5 text-purple-300 hover:border-purple-400/50'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        selectedClassrooms.includes(c._id) ? 'border-purple-400 bg-purple-500' : 'border-white/30'
+                      }`}>
+                        {selectedClassrooms.includes(c._id) && (
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{c.name}</p>
+                        <p className="text-xs text-purple-400">{c.students?.length || 0} students</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Proctored Exam Toggle */}
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => setIsProctored(prev => !prev)}
+                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${
+                  isProctored
+                    ? 'border-amber-500/50 bg-amber-500/10'
+                    : 'border-white/20 bg-white/5 hover:border-white/30'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                    isProctored ? 'bg-amber-500/20' : 'bg-white/10'
+                  }`}>
+                    <svg className={`w-5 h-5 ${isProctored ? 'text-amber-400' : 'text-purple-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <p className={`font-semibold text-sm ${isProctored ? 'text-amber-300' : 'text-white'}`}>
+                      Proctored Exam Mode {isProctored ? '— ON' : '— OFF'}
+                    </p>
+                    <p className="text-xs text-purple-400 mt-0.5">
+                      Forces fullscreen, blocks tab switching. Auto-submits on 2nd violation.
+                    </p>
+                  </div>
+                </div>
+                <div className={`relative w-12 h-6 rounded-full transition-colors duration-300 flex-shrink-0 ${isProctored ? 'bg-amber-500' : 'bg-white/20'}`}>
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-300 ${isProctored ? 'translate-x-7' : 'translate-x-1'}`} />
+                </div>
+              </button>
+            </div>
+            
+            {/* Strict AI Proctoring Toggle */}
+            <div className="flex items-center justify-between p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl mt-4">
+              <div>
+                <p className={`font-semibold text-sm ${isStrictProctored ? 'text-red-400' : 'text-white'}`}>
+                  Strict AI Proctoring (Webcam) {isStrictProctored ? '— ON' : '— OFF'}
+                </p>
+                <p className="text-xs text-purple-200 mt-1">
+                  Enforces continuous webcam monitoring. Auto-submits if the student looks away for 7 seconds.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsStrictProctored(!isStrictProctored)}
+                className="focus:outline-none"
+              >
+                <div className={`relative w-12 h-6 rounded-full transition-colors duration-300 flex-shrink-0 ${isStrictProctored ? 'bg-red-500' : 'bg-white/20'}`}>
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-300 ${isStrictProctored ? 'translate-x-7' : 'translate-x-1'}`} />
+                </div>
+              </button>
             </div>
 
             <motion.button

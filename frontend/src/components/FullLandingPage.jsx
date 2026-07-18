@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AboutSection from './AboutSection';
 import Carousel from './Carousel';
 import ContactSection from './ContactSection';
@@ -17,6 +17,18 @@ const FullLandingPage = () => {
   const [showLogin, setShowLogin] = useState(true);
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const isAdmin = user.email?.toLowerCase() === 'hemenbhasin@gmail.com' || user.email?.endsWith('admin.com');
+        const target = isAdmin ? '/admin' : '/student';
+        navigate(target + location.search);
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate, location.search]);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -30,11 +42,11 @@ const FullLandingPage = () => {
         await createUserWithEmailAndPassword(auth, email, password);
       }
       
-      // Navigate based on user type
+      // Navigate based on user type, preserve search params
       if (userType === 'admin') {
-        navigate('/admin');
+        navigate('/admin' + location.search);
       } else {
-        navigate('/student');
+        navigate('/student' + location.search);
       }
     } catch (err) {
       setError(err.message);
@@ -51,11 +63,11 @@ const FullLandingPage = () => {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       
-      // Navigate based on user type
+      // Navigate based on user type, preserve search params
       if (userType === 'admin') {
-        navigate('/admin');
+        navigate('/admin' + location.search);
       } else {
-        navigate('/student');
+        navigate('/student' + location.search);
       }
     } catch (err) {
       setError(err.message);

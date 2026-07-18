@@ -1,8 +1,11 @@
 import { auth } from '../firebaseConfig';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { signOut } from 'firebase/auth';
 import { API_BASE } from '../apiConfig';
 import QuizTaker from './QuizTaker';
+import JoinClassroom from './JoinClassroom';
 
 function StudentDashboard() {
   const [quizzes, setQuizzes] = useState([]);
@@ -11,7 +14,20 @@ function StudentDashboard() {
   const [error, setError] = useState(null);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [quizCompleted, setQuizCompleted] = useState(null);
-  const [showSubmissions, setShowSubmissions] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('join') ? 'classrooms' : 'quizzes';
+  });
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
 
   useEffect(() => {
     fetchQuizzes();
@@ -66,7 +82,9 @@ function StudentDashboard() {
   };
 
   const handleQuizComplete = (submission) => {
-    setQuizCompleted(submission);
+    if (submission && submission.status !== 'in-progress') {
+      setQuizCompleted(submission);
+    }
     setSelectedQuiz(null);
     fetchSubmissions(); // Refresh submissions
   };
@@ -77,7 +95,11 @@ function StudentDashboard() {
   };
 
   const isQuizCompleted = (quizId) => {
-    return submissions.some(sub => sub.quizId._id === quizId);
+    return submissions.some(sub => sub.quizId._id === quizId && sub.status === 'completed');
+  };
+
+  const isQuizInProgress = (quizId) => {
+    return submissions.some(sub => sub.quizId._id === quizId && sub.status === 'in-progress');
   };
 
   const getSubmissionForQuiz = (quizId) => {
@@ -156,7 +178,7 @@ function StudentDashboard() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="flex justify-between items-center mb-8"
+            className="flex justify-between items-center mb-8 flex-wrap gap-4"
           >
             <div className="flex items-center space-x-4">
               <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl shadow-lg">
@@ -170,19 +192,42 @@ function StudentDashboard() {
               </div>
             </div>
             
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowSubmissions(!showSubmissions)}
-              className="bg-white/10 backdrop-blur-lg text-white font-bold py-3 px-6 rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
-            >
-              <div className="flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            <div className="flex space-x-2">
+              {[
+                { key: 'quizzes', label: 'Quizzes', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /> },
+                { key: 'classrooms', label: 'Classrooms', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /> },
+                { key: 'scores', label: 'My Scores', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /> },
+              ].map(tab => (
+                <motion.button
+                  key={tab.key}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300 ${
+                    activeTab === tab.key
+                      ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg shadow-purple-500/25'
+                      : 'bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm border border-white/20'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">{tab.icon}</svg>
+                  <span>{tab.label}</span>
+                </motion.button>
+              ))}
+              
+              <div className="w-px h-8 bg-white/20 mx-2"></div>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleLogout}
+                className="flex items-center space-x-2 px-4 py-2 rounded-xl font-medium text-sm text-white bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 transition-all duration-300 ml-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                <span>{showSubmissions ? 'View Quizzes' : 'View My Scores'}</span>
-              </div>
-            </motion.button>
+                <span>Logout</span>
+              </motion.button>
+            </div>
           </motion.div>
 
           {/* Quiz Completion Message */}
@@ -217,15 +262,23 @@ function StudentDashboard() {
           )}
 
           <motion.div 
+            key={activeTab}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.4 }}
           >
-            {showSubmissions ? (
-              /* Submissions/Scores View */
+            {/* Classrooms Tab */}
+            {activeTab === 'classrooms' && (
               <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-white/20">
-                <h2 className="text-2xl font-bold text-white mb-6">My Quiz Scores</h2>
-                {submissions.length === 0 ? (
+                <JoinClassroom />
+              </div>
+            )}
+
+            {/* Submissions/Scores Tab */}
+            {activeTab === 'scores' && (
+              <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-white/20">
+                <h2 className="text-2xl font-bold text-white mb-6">My Scores</h2>
+                {submissions.filter(sub => sub.status === 'completed').length === 0 ? (
                   <div className="text-center py-12">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-500/20 rounded-full mb-4">
                       <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,7 +289,7 @@ function StudentDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {submissions.map((submission, index) => (
+                    {submissions.filter(sub => sub.status === 'completed').map((submission, index) => (
                       <motion.div 
                         key={submission._id}
                         initial={{ opacity: 0, x: -20 }}
@@ -250,6 +303,21 @@ function StudentDashboard() {
                             <p className="text-purple-200 text-sm">
                               Completed: {new Date(submission.submittedAt).toLocaleString()}
                             </p>
+                            {submission.malpractice ? (
+                              <span className="inline-flex items-center space-x-1 mt-1 px-2 py-0.5 rounded-full bg-red-600/30 text-red-300 border border-red-500/50 text-xs font-bold">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <span>MALPRACTICE DETECTED (Webcam Violation)</span>
+                              </span>
+                            ) : submission.autoSubmitted ? (
+                              <span className="inline-flex items-center space-x-1 mt-1 px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-xs">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <span>Auto-submitted (proctoring violation)</span>
+                              </span>
+                            ) : null}
                           </div>
                           <div className="text-right">
                             <div className="text-2xl font-bold text-white">
@@ -272,8 +340,10 @@ function StudentDashboard() {
                   </div>
                 )}
               </div>
-            ) : (
-              /* Available Quizzes View */
+            )}
+
+            {/* Quizzes Tab */}
+            {activeTab === 'quizzes' && (
               <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-white/20">
                 <h2 className="text-2xl font-bold text-white mb-6">Available Quizzes</h2>
                 {quizzes.length === 0 ? (
@@ -289,6 +359,7 @@ function StudentDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {quizzes.map((quiz, index) => {
                       const isCompleted = isQuizCompleted(quiz._id);
+                      const inProgress = isQuizInProgress(quiz._id);
                       const submission = getSubmissionForQuiz(quiz._id);
                       
                       return (
@@ -299,7 +370,17 @@ function StudentDashboard() {
                           transition={{ duration: 0.5, delay: index * 0.1 }}
                           className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-300"
                         >
-                          <h3 className="text-xl font-semibold text-white mb-3">{quiz.topic}</h3>
+                          <div className="flex items-start justify-between mb-2">
+                            <h3 className="text-xl font-semibold text-white">{quiz.topic}</h3>
+                            {quiz.isProctored && (
+                              <span className="flex-shrink-0 ml-2 flex items-center space-x-1 bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs px-2 py-1 rounded-full">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                                <span>Proctored</span>
+                              </span>
+                            )}
+                          </div>
                           {quiz.description && (
                             <p className="text-purple-200 mb-4 text-sm">{quiz.description}</p>
                           )}
@@ -322,14 +403,6 @@ function StudentDashboard() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <span>{quiz.timeLimitMinutes} minutes</span>
-                              </div>
-                            )}
-                            {quiz.availabilityEnd && (
-                              <div className="flex items-center space-x-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <span>Until {new Date(quiz.availabilityEnd).toLocaleDateString()}</span>
                               </div>
                             )}
                           </div>
@@ -357,9 +430,9 @@ function StudentDashboard() {
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                               onClick={() => startQuiz(quiz)}
-                              className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-purple-500/25 transition-all duration-300"
+                              className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-purple-500/25"
                             >
-                              Start Quiz
+                              {inProgress ? 'Resume Quiz' : 'Start Quiz'}
                             </motion.button>
                           )}
                         </motion.div>

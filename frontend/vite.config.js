@@ -19,5 +19,5 @@ export default defineConfig({
     },
     extensions: ['.js', '.jsx', '.json']  // Add this line
   },
-  base: process.env.VITE_BASE_PATH || "/VivaQ",
+  base: process.env.VITE_BASE_PATH || "/",
 })

@@ -17,9 +17,12 @@ const quizSchema = new mongoose.Schema({
   availabilityEnd: { type: Date, default: null },
   timeLimitMinutes: { type: Number, default: null },
   assignedTo: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  assignedClassrooms: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Classroom' }],
   status: { type: String, enum: ['draft', 'active', 'completed'], default: 'draft' },
   totalPoints: { type: Number, default: 0 },
-  description: { type: String, default: '' }
+  description: { type: String, default: '' },
+  isProctored: { type: Boolean, default: false },
+  isStrictProctored: { type: Boolean, default: false }
 });
 
 // Calculate total points when quiz is saved

@@ -2,19 +2,17 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCkHx780NzxG4mqYkJfovdJpPeMQi9fmBg",
-  authDomain: "vivaq-416.firebaseapp.com",
-  projectId: "vivaq-416",
-  storageBucket: "vivaq-416.firebasestorage.app",
-  messagingSenderId: "342270985251",
-  appId: "1:342270985251:web:49b6e31ab805d77e0edd96",
-  measurementId: "G-DBRQ4SLEBZ"
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence).catch(console.error);
 const googleProvider = new GoogleAuthProvider();
 
 export { auth, googleProvider };
