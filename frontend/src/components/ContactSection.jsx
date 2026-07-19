@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { CheckCircle2 } from 'lucide-react';
 import { API_BASE } from '../apiConfig';
 
 const ContactSection = () => {
@@ -170,7 +171,7 @@ const ContactSection = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center py-8"
               >
-                <div className="text-6xl mb-4">✅</div>
+                <div className="flex justify-center mb-4"><CheckCircle2 className="w-16 h-16 text-green-400" /></div>
                 <h4 className="text-xl font-semibold text-white mb-2">Message Sent!</h4>
                 <p className="text-purple-200">Thank you for reaching out. We'll get back to you soon!</p>
               </motion.div>

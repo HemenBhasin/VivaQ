@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GraduationCap, Bot, User, BarChart, Briefcase, Sparkles } from 'lucide-react';
 
 const Carousel = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -11,7 +12,7 @@ const Carousel = () => {
         quote: "VivaQ has revolutionized how I create quizzes. The AI integration is incredible and saves me hours of work!",
         author: "Dr. Sarah Johnson",
         role: "Professor of Computer Science",
-        avatar: "👩‍🏫"
+        avatar: <GraduationCap className="w-16 h-16 text-purple-400" />
       }
     },
     {
@@ -19,7 +20,7 @@ const Carousel = () => {
       content: {
         title: "AI-Powered Quiz Generation",
         description: "Generate intelligent, context-aware quizzes in seconds using advanced AI technology",
-        icon: "🤖",
+        icon: <Bot className="w-16 h-16 text-purple-400" />,
         stats: "1000+ quizzes generated"
       }
     },
@@ -29,7 +30,7 @@ const Carousel = () => {
         quote: "The real-time analytics help me understand exactly where my students need more support.",
         author: "Michael Chen",
         role: "High School Teacher",
-        avatar: "👨‍🏫"
+        avatar: <User className="w-16 h-16 text-purple-400" />
       }
     },
     {
@@ -37,7 +38,7 @@ const Carousel = () => {
       content: {
         title: "Real-time Analytics",
         description: "Track student performance with detailed analytics and insights",
-        icon: "📊",
+        icon: <BarChart className="w-16 h-16 text-purple-400" />,
         stats: "95% accuracy rate"
       }
     },
@@ -47,7 +48,7 @@ const Carousel = () => {
         quote: "The interface is so intuitive. My students love taking quizzes on VivaQ!",
         author: "Emily Rodriguez",
         role: "Middle School Educator",
-        avatar: "👩‍💼"
+        avatar: <Briefcase className="w-16 h-16 text-purple-400" />
       }
     },
     {
@@ -55,7 +56,7 @@ const Carousel = () => {
       content: {
         title: "Seamless User Experience",
         description: "Beautiful, responsive design that works perfectly on all devices",
-        icon: "✨",
+        icon: <Sparkles className="w-16 h-16 text-purple-400" />,
         stats: "99.9% uptime"
       }
     }
@@ -122,7 +123,7 @@ const Carousel = () => {
                 <div className="w-full max-w-4xl mx-auto px-8">
                   {slides[currentSlide].type === 'testimonial' ? (
                     <div className="text-center">
-                      <div className="text-6xl mb-6">{slides[currentSlide].content.avatar}</div>
+                      <div className="flex justify-center mb-6">{slides[currentSlide].content.avatar}</div>
                       <blockquote className="text-2xl md:text-3xl font-medium text-white mb-8 leading-relaxed">
                         "{slides[currentSlide].content.quote}"
                       </blockquote>
@@ -133,7 +134,7 @@ const Carousel = () => {
                     </div>
                   ) : (
                     <div className="text-center">
-                      <div className="text-6xl mb-6">{slides[currentSlide].content.icon}</div>
+                      <div className="flex justify-center mb-6">{slides[currentSlide].content.icon}</div>
                       <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">
                         {slides[currentSlide].content.title}
                       </h3>

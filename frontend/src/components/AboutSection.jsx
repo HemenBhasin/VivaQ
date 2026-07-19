@@ -1,35 +1,36 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Target, Clock, BarChart, Lock, Smartphone, Rocket } from 'lucide-react';
 
 const AboutSection = () => {
   const features = [
     {
-      icon: "🎯",
+      icon: <Target className="w-10 h-10 text-purple-400" />,
       title: "AI-Powered Quiz Generation",
       description: "Generate intelligent quizzes instantly using advanced AI technology"
     },
     {
-      icon: "⏱️",
+      icon: <Clock className="w-10 h-10 text-purple-400" />,
       title: "Real-time Timer",
       description: "Built-in timer with countdown and automatic submission"
     },
     {
-      icon: "📊",
+      icon: <BarChart className="w-10 h-10 text-purple-400" />,
       title: "Analytics Dashboard",
       description: "Comprehensive analytics and performance tracking"
     },
     {
-      icon: "🔒",
+      icon: <Lock className="w-10 h-10 text-purple-400" />,
       title: "Secure Authentication",
       description: "Google and email authentication with role-based access"
     },
     {
-      icon: "📱",
+      icon: <Smartphone className="w-10 h-10 text-purple-400" />,
       title: "Responsive Design",
       description: "Works seamlessly across all devices and screen sizes"
     },
     {
-      icon: "🚀",
+      icon: <Rocket className="w-10 h-10 text-purple-400" />,
       title: "Instant Results",
       description: "Get immediate feedback and detailed score analysis"
     }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { X, Copy, Check, Clock, Trash2, BookOpen, AlertCircle, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
@@ -449,8 +450,8 @@ const QuizGenerator = () => {
         transition={{ duration: 0.6 }}
         className="w-full"
       >
-        <h1 className="text-3xl font-bold text-white mb-8 text-center">
-          ✨ AI-Powered Quiz Question Generator
+        <h1 className="text-3xl font-bold text-white mb-8 text-center flex items-center justify-center">
+          <Sparkles className="w-8 h-8 text-purple-400 mr-3" /> AI-Powered Quiz Question Generator
         </h1>
 
         {quizSaved ? (

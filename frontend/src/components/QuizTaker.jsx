@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE } from '../apiConfig';
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+import { Camera, Download, BrainCircuit, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 const QuizTaker = ({ quizId, onComplete }) => {
   const [quiz, setQuiz] = useState(null);
@@ -34,7 +35,7 @@ const QuizTaker = ({ quizId, onComplete }) => {
   const lastFrameTimeRef = useRef(performance.now());
   const [webcamReady, setWebcamReady] = useState(false);
   const [isInitializingWebcam, setIsInitializingWebcam] = useState(false);
-  const [modelLoadStep, setModelLoadStep] = useState('');  // describes current init stage
+  const [modelLoadStep, setModelLoadStep] = useState(null);  // describes current init stage
   const [isFaceWarningActive, setIsFaceWarningActive] = useState(false);
   const faceWarningActiveRef = useRef(false);
 
@@ -294,7 +295,7 @@ const QuizTaker = ({ quizId, onComplete }) => {
       setIsInitializingWebcam(true);
       try {
         // Step 1: Get webcam stream
-        setModelLoadStep('📷 Requesting camera access...');
+        setModelLoadStep({ id: 'camera', text: 'Requesting camera access...' });
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         streamRef.current = stream;
         if (videoRef.current) {
@@ -302,13 +303,13 @@ const QuizTaker = ({ quizId, onComplete }) => {
         }
 
         // Step 2: Download MediaPipe WASM runtime (cached after first load)
-        setModelLoadStep('⬇️ Downloading AI model... (first time only, ~2MB)');
+        setModelLoadStep({ id: 'download', text: 'Downloading AI model... (first time only, ~2MB)' });
         const vision = await FilesetResolver.forVisionTasks(
           'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
         );
 
         // Step 3: Initialize FaceLandmarker
-        setModelLoadStep('🧠 Initializing face detection AI...');
+        setModelLoadStep({ id: 'init', text: 'Initializing face detection AI...' });
         detectorRef.current = await FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath:
@@ -321,7 +322,7 @@ const QuizTaker = ({ quizId, onComplete }) => {
           numFaces: 1
         });
 
-        setModelLoadStep('✅ Ready!');
+        setModelLoadStep({ id: 'ready', text: 'Ready!' });
         setWebcamReady(true);
       } catch (err) {
         console.error('Failed to initialize webcam or MediaPipe:', err);
@@ -589,7 +590,13 @@ const QuizTaker = ({ quizId, onComplete }) => {
                     <span>Preparing Proctored Exam...</span>
                   </div>
                   {modelLoadStep && (
-                    <p className="text-sm text-amber-100 font-normal">{modelLoadStep}</p>
+                    <div className="flex items-center space-x-2 text-sm text-amber-100 font-normal">
+                      {modelLoadStep.id === 'camera' && <Camera className="w-4 h-4" />}
+                      {modelLoadStep.id === 'download' && <Download className="w-4 h-4" />}
+                      {modelLoadStep.id === 'init' && <BrainCircuit className="w-4 h-4" />}
+                      {modelLoadStep.id === 'ready' && <CheckCircle2 className="w-4 h-4" />}
+                      <span>{modelLoadStep.text}</span>
+                    </div>
                   )}
                 </div>
               ) : (
@@ -624,7 +631,13 @@ const QuizTaker = ({ quizId, onComplete }) => {
                     <span>Preparing AI Proctor...</span>
                   </div>
                   {modelLoadStep && (
-                    <p className="text-sm text-purple-100 font-normal">{modelLoadStep}</p>
+                    <div className="flex items-center space-x-2 text-sm text-purple-100 font-normal">
+                      {modelLoadStep.id === 'camera' && <Camera className="w-4 h-4" />}
+                      {modelLoadStep.id === 'download' && <Download className="w-4 h-4" />}
+                      {modelLoadStep.id === 'init' && <BrainCircuit className="w-4 h-4" />}
+                      {modelLoadStep.id === 'ready' && <CheckCircle2 className="w-4 h-4" />}
+                      <span>{modelLoadStep.text}</span>
+                    </div>
                   )}
                 </div>
               ) : (
@@ -742,7 +755,10 @@ const QuizTaker = ({ quizId, onComplete }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </motion.div>
-              <h2 className="text-2xl font-bold text-white mb-3">⚠️ Warning! ({warnings} of 2)</h2>
+              <h2 className="text-2xl font-bold text-white mb-3 flex items-center justify-center">
+                <AlertTriangle className="w-7 h-7 mr-2 text-amber-500" />
+                Warning! ({warnings} of 2)
+              </h2>
               <p className="text-amber-300 font-medium mb-2">
                 {warningType === 'fullscreen' ? 'You exited fullscreen mode.' : 'You switched away from the exam tab/window.'}
               </p>

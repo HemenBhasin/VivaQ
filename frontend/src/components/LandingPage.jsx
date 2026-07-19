@@ -1,6 +1,7 @@
 import { auth } from '../firebaseConfig';
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Brain } from 'lucide-react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
@@ -84,9 +85,7 @@ const LandingPage = () => {
             className="text-center mb-8"
           >
             <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl mb-6 shadow-2xl">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <Brain className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-4xl font-bold text-white mb-2">VivaQ</h1>
             <p className="text-purple-200 text-lg">AI-Powered Quiz Platform</p>
