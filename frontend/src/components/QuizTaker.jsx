@@ -38,6 +38,11 @@ const QuizTaker = ({ quizId, onComplete }) => {
   const [modelLoadStep, setModelLoadStep] = useState(null);  // describes current init stage
   const [isFaceWarningActive, setIsFaceWarningActive] = useState(false);
   const faceWarningActiveRef = useRef(false);
+  const lastVideoTimeRef = useRef(-1);
+  const frozenFramesRef = useRef(0);
+  const lastLandmarkRef = useRef(null);
+  const identicalLandmarksCountRef = useRef(0);
+  const cameraBlockedFramesRef = useRef(0);
 
   useEffect(() => {
     fetchQuiz();
@@ -85,6 +90,14 @@ const QuizTaker = ({ quizId, onComplete }) => {
       handleSubmit(true, 2, false);
     }
   }, [quiz]);
+
+  const abortQuiz = (reason) => {
+    alert(`Proctoring Violation: ${reason}`);
+    submittingRef.current = true;
+    if (onComplete) {
+      onComplete(null); // Passing null tells StudentDashboard to return to the main menu without saving
+    }
+  };
 
   // Fullscreen change
   useEffect(() => {
@@ -135,7 +148,40 @@ const QuizTaker = ({ quizId, onComplete }) => {
     if (!videoRef.current || !detectorRef.current || submittingRef.current || !quizStarted) return;
 
     try {
+      // Check if camera stream was disabled/revoked by user or OS
+      const videoTrack = streamRef.current?.getVideoTracks()[0];
+      
+      if (
+        !videoTrack || 
+        videoTrack.readyState === 'ended' || 
+        !streamRef.current?.active || 
+        videoTrack.muted ||
+        videoRef.current.paused
+      ) {
+        cameraBlockedFramesRef.current += 1;
+        if (cameraBlockedFramesRef.current > 60) {
+          abortQuiz("Camera was disabled or blocked during strict proctored exam");
+          return;
+        }
+      } else {
+        cameraBlockedFramesRef.current = 0;
+      }
+
       if (videoRef.current.readyState === 4) {
+        // Exploit check: if the video time stops advancing, the camera is frozen/blocked
+        const currentVideoTime = videoRef.current.currentTime;
+        if (currentVideoTime === lastVideoTimeRef.current) {
+          frozenFramesRef.current += 1;
+          // ~2 seconds of frozen frames at 60fps
+          if (frozenFramesRef.current > 120) {
+            abortQuiz("Camera feed was frozen or blocked during strict proctored exam");
+            return;
+          }
+        } else {
+          frozenFramesRef.current = 0;
+          lastVideoTimeRef.current = currentVideoTime;
+        }
+
         const now = performance.now();
         const delta = now - lastFrameTimeRef.current;
         lastFrameTimeRef.current = now;
@@ -150,6 +196,25 @@ const QuizTaker = ({ quizId, onComplete }) => {
           isLookingAway = true;
           reason = 'No face detected';
         } else {
+          // Exploit check 2: AI Landmark Jitter Detection
+          // Human faces and camera sensors always have micro-jitter.
+          // If the float64 coordinates are EXACTLY identical for ~1 second, the video feed is artificially frozen.
+          const currentNoseTip = results.faceLandmarks[0][1];
+          if (
+            lastLandmarkRef.current && 
+            currentNoseTip.x === lastLandmarkRef.current.x && 
+            currentNoseTip.y === lastLandmarkRef.current.y
+          ) {
+            identicalLandmarksCountRef.current += 1;
+            if (identicalLandmarksCountRef.current > 30) {
+              abortQuiz("Camera feed was artificially frozen or blocked");
+              return;
+            }
+          } else {
+            identicalLandmarksCountRef.current = 0;
+            lastLandmarkRef.current = { x: currentNoseTip.x, y: currentNoseTip.y };
+          }
+
           // ── 1. HEAD POSE via rotation matrix ─────────────────────────────
           // Column-major 4x4 matrix. Euler extraction (XYZ convention):
           //   yaw   = asin(-m[8])      → turning left/right
@@ -289,52 +354,53 @@ const QuizTaker = ({ quizId, onComplete }) => {
     onComplete({ score: 0, totalPossibleScore: quiz?.totalPoints || 0, percentage: 0, timeTakenSeconds: 0, status: 'in-progress' });
   };
 
+  // ── Prepare proctoring (camera + model) ──────────────────────────────────
+  const prepareProctoring = async () => {
+    setIsInitializingWebcam(true);
+    try {
+      // Step 1: Get webcam stream
+      setModelLoadStep({ id: 'camera', text: 'Requesting camera access...' });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+
+      // Step 2: Download MediaPipe WASM runtime (cached after first load)
+      setModelLoadStep({ id: 'download', text: 'Downloading AI model... (first time only, ~2MB)' });
+      const vision = await FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
+      );
+
+      // Step 3: Initialize FaceLandmarker
+      setModelLoadStep({ id: 'init', text: 'Initializing face detection AI...' });
+      detectorRef.current = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath:
+            'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+          delegate: 'GPU'
+        },
+        outputFaceBlendshapes: true,              // eye gaze detection
+        outputFacialTransformationMatrixes: true, // head pose detection
+        runningMode: 'VIDEO',
+        numFaces: 1
+      });
+
+      setModelLoadStep({ id: 'ready', text: 'Ready!' });
+      setWebcamReady(true);
+    } catch (err) {
+      console.error('Failed to initialize webcam or MediaPipe:', err);
+      setError('Camera permission is required for strict proctored quizzes. Please allow camera access and try again.');
+      setIsInitializingWebcam(false);
+      setModelLoadStep(null);
+      return;
+    }
+    setIsInitializingWebcam(false);
+    setModelLoadStep(null);
+  };
+
   // ── Enter fullscreen & start quiz ────────────────────────────────────────
   const enterFullscreenAndStart = async () => {
-    if (quiz?.isStrictProctored) {
-      setIsInitializingWebcam(true);
-      try {
-        // Step 1: Get webcam stream
-        setModelLoadStep({ id: 'camera', text: 'Requesting camera access...' });
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-
-        // Step 2: Download MediaPipe WASM runtime (cached after first load)
-        setModelLoadStep({ id: 'download', text: 'Downloading AI model... (first time only, ~2MB)' });
-        const vision = await FilesetResolver.forVisionTasks(
-          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
-        );
-
-        // Step 3: Initialize FaceLandmarker
-        setModelLoadStep({ id: 'init', text: 'Initializing face detection AI...' });
-        detectorRef.current = await FaceLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath:
-              'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
-            delegate: 'GPU'
-          },
-          outputFaceBlendshapes: true,              // eye gaze detection
-          outputFacialTransformationMatrixes: true, // head pose detection
-          runningMode: 'VIDEO',
-          numFaces: 1
-        });
-
-        setModelLoadStep({ id: 'ready', text: 'Ready!' });
-        setWebcamReady(true);
-      } catch (err) {
-        console.error('Failed to initialize webcam or MediaPipe:', err);
-        setError('Camera permission is required for strict proctored quizzes. Please allow camera access and try again.');
-        setIsInitializingWebcam(false);
-        setModelLoadStep('');
-        return;
-      }
-      setIsInitializingWebcam(false);
-      setModelLoadStep('');
-    }
-
     if (quiz?.isProctored) {
       try {
         isRequestingFullscreenRef.current = true;
@@ -583,22 +649,34 @@ const QuizTaker = ({ quizId, onComplete }) => {
                   <span>{quiz.totalPoints} pts</span>
                 </span>
               </div>
-              {isInitializingWebcam ? (
-                <div className="w-full py-4 px-8 bg-gradient-to-r from-amber-500/60 to-orange-500/60 text-white font-bold text-lg rounded-2xl shadow-lg flex flex-col items-center space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Preparing Proctored Exam...</span>
-                  </div>
-                  {modelLoadStep && (
-                    <div className="flex items-center space-x-2 text-sm text-amber-100 font-normal">
-                      {modelLoadStep.id === 'camera' && <Camera className="w-4 h-4" />}
-                      {modelLoadStep.id === 'download' && <Download className="w-4 h-4" />}
-                      {modelLoadStep.id === 'init' && <BrainCircuit className="w-4 h-4" />}
-                      {modelLoadStep.id === 'ready' && <CheckCircle2 className="w-4 h-4" />}
-                      <span>{modelLoadStep.text}</span>
+              {quiz.isStrictProctored && !webcamReady ? (
+                isInitializingWebcam ? (
+                  <div className="w-full py-4 px-8 bg-gradient-to-r from-amber-500/60 to-orange-500/60 text-white font-bold text-lg rounded-2xl shadow-lg flex flex-col items-center space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Preparing Proctored Exam...</span>
                     </div>
-                  )}
-                </div>
+                    {modelLoadStep && (
+                      <div className="flex items-center space-x-2 text-sm text-amber-100 font-normal">
+                        {modelLoadStep.id === 'camera' && <Camera className="w-4 h-4" />}
+                        {modelLoadStep.id === 'download' && <Download className="w-4 h-4" />}
+                        {modelLoadStep.id === 'init' && <BrainCircuit className="w-4 h-4" />}
+                        {modelLoadStep.id === 'ready' && <CheckCircle2 className="w-4 h-4" />}
+                        <span>{modelLoadStep.text}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={prepareProctoring}
+                    className="w-full py-4 px-8 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg rounded-2xl shadow-lg shadow-amber-500/30 flex items-center justify-center space-x-2"
+                  >
+                    <Camera className="w-6 h-6" />
+                    <span>Grant Camera & Prepare Exam</span>
+                  </motion.button>
+                )
               ) : (
                 <motion.button
                   whileHover={{ scale: 1.03 }}
@@ -606,7 +684,7 @@ const QuizTaker = ({ quizId, onComplete }) => {
                   onClick={enterFullscreenAndStart}
                   className="w-full py-4 px-8 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg rounded-2xl shadow-lg shadow-amber-500/30"
                 >
-                  Enter Fullscreen &amp; Start Exam
+                  Enter Fullscreen & Start Exam
                 </motion.button>
               )}
             </>
@@ -624,23 +702,7 @@ const QuizTaker = ({ quizId, onComplete }) => {
                 {quiz?.timeLimitMinutes && <span>{quiz.timeLimitMinutes} min</span>}
                 <span>{quiz?.totalPoints} pts</span>
               </div>
-              {isInitializingWebcam ? (
-                <div className="w-full py-4 px-8 bg-gradient-to-r from-purple-500/60 to-blue-500/60 text-white font-bold text-lg rounded-2xl shadow-lg flex flex-col items-center space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Preparing AI Proctor...</span>
-                  </div>
-                  {modelLoadStep && (
-                    <div className="flex items-center space-x-2 text-sm text-purple-100 font-normal">
-                      {modelLoadStep.id === 'camera' && <Camera className="w-4 h-4" />}
-                      {modelLoadStep.id === 'download' && <Download className="w-4 h-4" />}
-                      {modelLoadStep.id === 'init' && <BrainCircuit className="w-4 h-4" />}
-                      {modelLoadStep.id === 'ready' && <CheckCircle2 className="w-4 h-4" />}
-                      <span>{modelLoadStep.text}</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
+
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
@@ -649,7 +711,6 @@ const QuizTaker = ({ quizId, onComplete }) => {
                 >
                   Start Quiz
                 </motion.button>
-              )}
             </>
           )}
         </motion.div>
