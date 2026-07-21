@@ -365,66 +365,6 @@ const QuizGenerator = () => {
     }
   };
 
-  // Function to create a test quiz (for debugging)
-  const createTestQuiz = async () => {
-    if (!currentUser) {
-      setError('User not authenticated');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      const testQuestions = [
-        {
-          questionText: "What is 2 + 2?",
-          questionType: "MCQ",
-          correctAnswer: "4",
-          options: ["3", "4", "5", "6"]
-        },
-        {
-          questionText: "Is the sky blue?",
-          questionType: "TrueFalse",
-          correctAnswer: "true"
-        }
-      ];
-      
-      const quizPayload = {
-        topic: "Test Quiz",
-        description: "A simple test quiz",
-        questionType: "MCQ",
-        questions: testQuestions,
-        assignedTo: [],
-        availabilityStart: null,
-        availabilityEnd: null,
-        timeLimitMinutes: 10,
-        status: 'active'
-      };
-      
-      console.log('Sending test quiz payload:', quizPayload);
-      
-      const token = await currentUser.getIdToken();
-      const response = await fetch(`${API_BASE}/api/save-quiz`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(quizPayload)
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to save quiz: ${response.statusText}`);
-      }
-      const data = await response.json();
-      setQuizSaved(true);
-      setSavedQuizId(data.quiz._id);
-    } catch (err) {
-      console.error('Error saving test quiz:', err);
-      setError(`Failed to save test quiz: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Framer Motion variants for staggered list entry
   const containerVariants = {
@@ -693,7 +633,7 @@ const QuizGenerator = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               disabled={loading || !topic.trim()}
-              className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all duration-300
+              className={`w-full mt-[10px] py-4 px-6 rounded-xl font-semibold text-white transition-all duration-300
                 ${loading || !topic.trim() ? 'bg-white/10 text-purple-400 cursor-not-allowed' : 'bg-gradient-to-r from-purple-500 to-blue-500 shadow-lg shadow-purple-500/25 hover:shadow-xl'}`}
             >
               {loading ? (
@@ -707,22 +647,6 @@ const QuizGenerator = () => {
               ) : (
                 'Generate Questions '
               )}
-            </motion.button>
-
-            {/* Test button for debugging */}
-            <motion.button
-              onClick={createTestQuiz}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              disabled={loading}
-              className="w-full mt-6 py-4 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-yellow-500 to-orange-500 shadow-lg shadow-yellow-500/25 hover:shadow-xl transition-all duration-300"
-            >
-              <div className="flex items-center justify-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <span>Create Test Quiz (Debug)</span>
-              </div>
             </motion.button>
           </>
         )}
